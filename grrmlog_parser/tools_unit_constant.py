@@ -3,7 +3,7 @@
 ##############
 ## angstrom
 def unit_au2ang():
-    return 0.5291772109
+    return 0.529177210903
 
 def unit_ang2au():
     return 1.0/unit_au2ang()
