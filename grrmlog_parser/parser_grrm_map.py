@@ -1,5 +1,6 @@
 import os
 import copy
+from tqdm.auto import trange
 from .models import GRRMMap, EQ, Edge
 from .parser_grrm_eqlist        import parser_grrm_eqlist
 from .parser_grrm_tslist        import parser_grrm_tslist
@@ -15,6 +16,7 @@ from .parser_grrm_add_gradient  import parser_grrm_add_gradient
 def parser_grrm_map(fn_abs_top):
 
     ##file check
+    print('Builing filenames')
     fn_eqlist = fn_abs_top + "_EQ_list.log"
     fn_tslist = fn_abs_top + "_TS_list.log"
     fn_dclist = fn_abs_top + "_DC_list.log"
@@ -25,9 +27,11 @@ def parser_grrm_map(fn_abs_top):
     dn_abs_map = fn_abs_top[:-(len(fn_top)+1)]
 
     ## get file list
+    print('Retrieving files list')
     work_fname_list = os.listdir(dn_abs_map)
 
     ## check data
+    print('Checking data presence')
     tag_1eq_2dc_4ts_8pt=0
     if "%s_EQ_list.log" % (fn_top) in work_fname_list: tag_1eq_2dc_4ts_8pt=tag_1eq_2dc_4ts_8pt + 1
     if "%s_DC_list.log" % (fn_top) in work_fname_list: tag_1eq_2dc_4ts_8pt=tag_1eq_2dc_4ts_8pt + 2
@@ -45,6 +49,7 @@ def parser_grrm_map(fn_abs_top):
 
 
     ## Get job type
+    print('Extracting job type')
     t_jobtype="none"
     if os.path.exists(fn_param):
         param_dat=parser_grrm_param(fn_param)
@@ -59,24 +64,28 @@ def parser_grrm_map(fn_abs_top):
     out_json={}
 
     ## Load EQ list
+    print('Extracting EQ data')
     if os.path.exists(fn_eqlist):
         out_json["EQ"]=parser_grrm_eqlist(fn_eqlist)
     else:
         out_json["EQ"]=[]
 
     ## Load TS list
+    print('Extracting TS data')
     if os.path.exists(fn_tslist):
         out_json["TS"]=parser_grrm_tslist(fn_tslist)
     else:
         out_json["TS"]=[]
 
     ## Load PT list
+    print('Extracting PT data')
     if os.path.exists(fn_ptlist):
         out_json["PT"]=parser_grrm_tslist(fn_ptlist)
     else:
         out_json["PT"]=[]
 
     ## Load DAT file including gradient
+    print('Extracting PT gradient data')
     if os.path.exists(fn_ptlist):
         out_json["DAT"]\
             =parser_grrm_dat\
@@ -86,6 +95,7 @@ def parser_grrm_map(fn_abs_top):
 
 
     ## PT path registrated
+    print('Processing PT paths')
     if t_jobtype=="sc-afir"\
        or t_jobtype=="repath":
         if len(out_json["PT"])>=0:
@@ -95,6 +105,7 @@ def parser_grrm_map(fn_abs_top):
 
     ## SC-AFIR universal energy change
     ## only when universal force is not zero
+    print('Correcting AFIR-induced energy change')
     if (t_jobtype=="sc-afir" or t_jobtype=="repath") and param_dat["universal_gamma"]!=0.0 and param_dat["readbareenergy"]==True:
         out_json["EQ"], out_json["TS"], out_json["PT"] \
             = parser_grrm_modify_energy(fn_abs_top, out_json["EQ"], out_json["TS"], out_json["PT"])
@@ -106,9 +117,10 @@ def parser_grrm_map(fn_abs_top):
         quit()
 
     ## analize data
+    print('Computing min/max energies')
     t_low_ene = 0.0
     t_high_ene = 0.0
-    for ilist in range(0, len(out_json["EQ"])):
+    for ilist in trange(0, len(out_json["EQ"]), unit='EQ'):
         t_d = out_json["EQ"][ilist]["energy"][0]
         if t_low_ene > t_d:
             t_low_ene = t_d
@@ -116,7 +128,7 @@ def parser_grrm_map(fn_abs_top):
         if t_high_ene < t_d or t_high_ene==0.0:
             t_high_ene = t_d
 
-    for ilist in range(0, len(out_json["TS"])):
+    for ilist in trange(0, len(out_json["TS"]), unit='TS'):
         t_d = out_json["TS"][ilist]["energy"][0]
         if t_low_ene > t_d:
             t_low_ene = t_d
@@ -126,8 +138,9 @@ def parser_grrm_map(fn_abs_top):
 
 
     ## ---------------------
-    ## get data from com
+    ## get data from log
     ## ---------------------
+    print('Retrieving data from log file')
     t_json_main_log\
         =parser_grrm_main_log\
         ("%s.log" % (fn_abs_top))
@@ -136,6 +149,7 @@ def parser_grrm_map(fn_abs_top):
     ## ---------------------
     ## get data from com
     ## ---------------------
+    print('Retrieving data from input file')
     if len(out_json["EQ"])==0:
         data_com=parser_grrm_com(fn_com)
         natoms=data_com["natoms"]
@@ -146,6 +160,7 @@ def parser_grrm_map(fn_abs_top):
     ## ---------------------------------------
     ##   assign all data for each geometries
     ## ---------------------------------------
+    print('Assigning gradient data to geometries')
     if len(out_json["DAT"])>=0:
         out_json["EQ"], out_json["TS"], out_json["PT"] \
             = parser_grrm_add_gradient\
@@ -159,34 +174,41 @@ def parser_grrm_map(fn_abs_top):
     ##  add all data for object
     ## --------------------------
     ## prepare the log data
+    print('Converting raw data:')
     map = GRRMMap()
 
+    print('Converting raw EQ data')
     if os.path.exists(fn_eqlist)\
        and len(out_json["EQ"])>=0:
         map.eq_list=_convert_list_to_object(out_json["EQ"],"eq")
 
+    print('Converting raw TS data')
     if os.path.exists(fn_tslist)\
        and len(out_json["TS"])>=0:
         map.ts_list=_convert_list_to_object(out_json["TS"],"ts")
 
+    print('Converting raw PT data')
     if os.path.exists(fn_ptlist)\
        and len(out_json["PT"])>=0:
         map.pt_list=_convert_list_to_object(out_json["PT"],"pt")
 
         ## Put the path data
-        for ipt in range(0,len(map.pt_list)):
+        print('Organizing pathdata')
+        for ipt in trange(0,len(map.pt_list)):
             if len(out_json["PT"][ipt]["pathdata"])!=0:
                 map.pt_list[ipt].pathdata\
                     =_convert_list_to_object(out_json["PT"][ipt]["pathdata"],\
                                              "node")
 
 
+    print('Converting raw gradient data')
     if len(out_json["DAT"])>=0:
         map.geom_list=_convert_list_to_object(out_json["DAT"],"dat")
 
     ## ---------------------------
     ##   summary
     ## ---------------------------
+    print('Converting map related global information')
     map.param={}
     map.fname_top_abs=fn_abs_top
     map.fname_top_rel=fn_abs_top.split("/")[-1]
