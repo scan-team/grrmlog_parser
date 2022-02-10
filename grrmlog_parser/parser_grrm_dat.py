@@ -1,6 +1,7 @@
 import os
 import copy
 import glob
+from tqdm.auto import trange
 from .tools_unit_constant import unit_ang2au, unit_au2ang
 from .parser_grrm_param         import parser_grrm_param
 
@@ -14,7 +15,7 @@ def parser_grrm_dat(fname):
     ## ---------------
     out_list=[]
     count_id=0
-    for ifn in range(0, len(tmp_fn_list)):
+    for ifn in trange(0, len(tmp_fn_list), unit='file'):
         t_num=tmp_fn_list[ifn][len(fname)+2:-4]
         if t_num.isnumeric():
             tmp_dat,count_id\
@@ -22,13 +23,13 @@ def parser_grrm_dat(fname):
 
             for idat in range(0,len(tmp_dat)):
                 out_list.append(copy.deepcopy(tmp_dat[idat]))
-            
+
             del tmp_dat
 
     if len(out_list) > 0:
         return out_list
 
-    
+
     ## -------------------------
     ## Find infile jobs
     ## -------------------------
@@ -48,11 +49,11 @@ def parser_grrm_dat(fname):
 
             ## Load pt path from the previous job
             out_list=parser_grrm_dat(fn_abs_infile_top)
-            
-            
+
+
     return out_list
 
-    
+
 def _load_dat_file(fn_abs_dat, count_id):
 
     ls_dat=[]
@@ -64,7 +65,7 @@ def _load_dat_file(fn_abs_dat, count_id):
     while line:
 
         line = fdat.readline()
-        
+
         #RESULTS
         #CURRENT COORDINATE
         #H         -1.696741879408         -0.381991249860         -0.776848274818
@@ -95,7 +96,7 @@ def _load_dat_file(fn_abs_dat, count_id):
             t_xyz=[]
             while line:
                 line = fdat.readline()
-                    
+
                 if "ENERGY" in line:
                     break
                 else:
@@ -114,11 +115,11 @@ def _load_dat_file(fn_abs_dat, count_id):
             line = fdat.readline()
             t_ene.append(float(line.split()[1]))
             t_ene.append(float(line.split()[2]))
-            
+
             ## Load S^2 value
             line = fdat.readline() #S**2   =    0.756508849780
             t_s2v=float(line.split()[2])
-            
+
             ## Load Gradient
             natoms=len(t_xyz)
             line = fdat.readline() #GRADIENT
@@ -136,7 +137,7 @@ def _load_dat_file(fn_abs_dat, count_id):
             t_dipol.append(float(line.split()[2]))
             t_dipol.append(float(line.split()[3]))
             t_dipol.append(float(line.split()[4]))
-            
+
             ## save into the lib
             t_json["category"]="DAT"
             t_json["symmetry"]=""
@@ -154,7 +155,7 @@ def _load_dat_file(fn_abs_dat, count_id):
             ## add to list and count up
             count_id=count_id+1
             ls_dat.append(t_json)
-    fdat.close()    
+    fdat.close()
 
     return ls_dat, count_id
 

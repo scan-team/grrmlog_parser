@@ -1,25 +1,26 @@
 import os
 import copy
 import glob
+from tqdm.auto import trange
 from .tools_unit_constant import unit_ang2au, unit_au2ang
 from .parser_grrm_param         import parser_grrm_param
 
 def parser_grrm_pt_path(fn_abs_top, ls_pt_json):
 
     tag_read_pt_path=False
-    
+
     ## Find PT log data
-    for ipt in range(0, len(ls_pt_json)):
+    for ipt in trange(0, len(ls_pt_json), unit='file'):
 
         fn_rel_top=fn_abs_top.split("/")[-1]
-        
+
         ## Detailed output ON
         fn_pt_path="%s_PT%d.log" % (fn_abs_top, ipt)
         if os.path.exists(fn_pt_path):
             ls_pt_json[ipt]["pathdata"]\
                 =_load_pt_path_file(fn_pt_path)
             tag_read_pt_path=True
-            
+
         ## Detailed output OFF in SPDAT
         fn_pt_path="%s_SPDAT/%s_PT%d.log" \
             % (fn_abs_top, fn_rel_top, ipt)
@@ -30,7 +31,7 @@ def parser_grrm_pt_path(fn_abs_top, ls_pt_json):
 
     if len(ls_pt_json) == 0 or tag_read_pt_path==True:
         return ls_pt_json
-    
+
     ## -------------------------
     ## Find infile jobs
     ## -------------------------
@@ -46,11 +47,11 @@ def parser_grrm_pt_path(fn_abs_top, ls_pt_json):
             dn_infile=fn_abs_top[:-(len(fn_abs_top.split("/")[-1])+1)]
 
             fn_abs_infile_top="%s/%s" % (dn_infile, param_infile)
-            
+
             ## Load pt path from the previous job
             ls_pt_json=parser_grrm_pt_path\
                 (fn_abs_infile_top, ls_pt_json)
-            
+
     return ls_pt_json
 
 
@@ -61,7 +62,7 @@ def parser_grrm_pt_path(fn_abs_top, ls_pt_json):
 ## --------------------------------------
 def _load_pt_path_file(fname):
 
-    ## initialize 
+    ## initialize
     ls_json=[]
 
     ## -------------------------
@@ -88,7 +89,7 @@ def _load_pt_path_file(fname):
             #  RMS      Displacement    0.007239262828          0.001000000000
             #NORMAL MODE EIGENVALUE : N_MODE = 5
             #  0.077826113   0.203289746   0.365227277   0.375676140   0.464381607
-            
+
             ## get EQ
             t_d=line.split()
             inode_cout=int(t_d[2].replace(":",""))
@@ -162,13 +163,13 @@ def _load_pt_path_file(fname):
             t_json["hess_eigenvalue_au"]=copy.deepcopy(t_eigenvalue)
             t_json["gradient"]=[]
             t_json["dipole"]=[]
-            
+
             ## add to list
             ls_json.append(copy.deepcopy(t_json))
 
         else:
             line = fdat.readline()
-    fdat.close()    
+    fdat.close()
 
     return copy.deepcopy(ls_json)
 

@@ -22,6 +22,6 @@ setup(
     packages=['grrmlog_parser', 'grrmlog_parser.models'],
     package_dir={"": "."},
     package_data={},
-    install_requires=['numpy==1.*,>=1.19.4', 'pandas==1.*,>=1.1.3'],
+    install_requires=['numpy==1.*,>=1.19.4', 'pandas==1.*,>=1.1.3', 'tqdm>=4.27.0'],
     extras_require={"dev": ["pytest==5.*,>=5.2.0"]},
 )
