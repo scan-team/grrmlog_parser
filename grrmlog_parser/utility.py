@@ -39,8 +39,15 @@ def get_filename_list_abs_path\
             tag_grrm_map_log\
                 =tools_judge_grrm_log(fn_abs_top)
 
+            ## To control uploading to SCAN : not upload
+            if os.path.exists("%s.scan.donot.upload.txt" % (fn_abs_top)):
+                pass
+            
             ## add in list
-            ls_fn_abs.append(copy.deepcopy(fn_abs_top))
+            elif os.path.exists("%s_EQ_list.log" % (fn_abs_top))\
+               and os.path.exists("%s_PT_list.log" % (fn_abs_top))\
+               and os.path.exists("%s.log" % (fn_abs_top)):
+                ls_fn_abs.append(copy.deepcopy(fn_abs_top))
 
         ## add star directory
         inp_star="*/%s" % (inp_star)
